@@ -1,0 +1,75 @@
+import re
+import requests
+from bs4 import BeautifulSoup
+
+# Function to check for common phishing indicators in the URL
+def check_url(url):
+    # List of suspicious keywords
+    suspicious_keywords = ['login', 'verify', 'update', 'secure', 'account', 'banking']
+    
+    # Ensure URL starts with http/https
+    if not re.match(r'^https?://', url):
+        print("URL should start with http:// or https://")
+        return True
+    
+    # Check for suspicious keywords in the URL
+    for keyword in suspicious_keywords:
+        if keyword.lower() in url.lower():
+            print(f"Suspicious keyword '{keyword}' found in URL")
+            return True
+    
+    # Check for IP addresses in the URL
+    if re.search(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', url):
+        print("IP address detected in URL")
+        return True
+    
+    # Check for unusual characters in the URL
+    if re.search(r'@|%|!', url):
+        print("Unusual character detected in URL")
+        return True
+    
+    # Check if the URL uses HTTPS
+    if not url.startswith('https://'):
+        print("URL is not using HTTPS")
+        return True
+    
+    return False
+
+# Function to fetch and analyze the webpage content
+def analyze_webpage(url):
+    try:
+        response = requests.get(url, timeout=5)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Check for suspicious forms (password or credit card fields)
+        forms = soup.find_all('form')
+        for form in forms:
+            if re.search(r'password|credit\s*card', str(form), re.I):
+                print("Suspicious form detected (password or credit card field)")
+                return True
+    except requests.exceptions.Timeout:
+        print("The request timed out.")
+    except Exception as e:
+        print(f"Error fetching the webpage: {e}")
+        return False
+    
+    return False
+
+# Main function
+def main():
+    url = input("Enter the URL to check: ")
+    
+    # Check the URL for phishing indicators
+    if check_url(url):
+        print("Suspicious URL detected!")
+    else:
+        print("URL seems safe.")
+    
+    # Analyze webpage content for phishing forms
+    if analyze_webpage(url):
+        print("Suspicious webpage content detected!")
+    else:
+        print("Webpage content seems safe.")
+
+if __name__ == "__main__":
+    main()
